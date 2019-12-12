@@ -1,8 +1,4 @@
-#include <avr/io.h>
-#include <util/delay.h>
-
 #define F_CPU 16000000UL
-
 void motorControl(char c, double quantity)
 {
 	int i = 0;
