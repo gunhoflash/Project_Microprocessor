@@ -35,7 +35,9 @@ void run_gradient_descent()
 
 	// variables for gyro sensor: MPU-6050
 	double a_x, a_y, a_z, g_x, g_y, g_z;
-	double gradient_x, gradient_y;
+	double normalized_gradient_x, normalized_gradient_y;
+	double angle;       // -pi ~ pi
+	double inclination; // 0 ~ 1
 
 	while (1)
 	{
@@ -48,44 +50,63 @@ void run_gradient_descent()
 		g_z = gyro_get_data(GZ);
 
 		// print values for test
-		usart_transmit_init4(a_x);
-		usart_transmit('\t');
-		usart_transmit_init4(a_y);
-		usart_transmit('\t');
-		usart_transmit_init4(a_z);
-		usart_transmit('\t');
-		usart_transmit_init4(g_x);
-		usart_transmit('\t');
-		usart_transmit_init4(g_y);
-		usart_transmit('\t');
+		usart_transmit_init4(a_x); usart_transmit('\t');
+		usart_transmit_init4(a_y); usart_transmit('\t');
+		usart_transmit_init4(a_z); usart_transmit('\t');
+		usart_transmit_init4(g_x); usart_transmit('\t');
+		usart_transmit_init4(g_y); usart_transmit('\t');
 		usart_transmit_init4(g_z);
 		usart_transmit('\n');
 		usart_transmit('\r');
 
 		/*
-		 0 PIN 1
-		LED
-		 2     3
+
+		 3     2            ^ (x)      
+		      LED           |          
+		 1 PIN 0            |          
+		                    |          
+		                    |          
+		                    |          
+		- - - - - - - - - - + - - - - >
+		                    |       (y)
+		                    |          
 
 		0: +++ >>> backward right
 		1: +-+ >>> backward left
 		2: -++ >>> forward  right
 		3: --+ >>> forward  left
-		
+
 		*/
-		i = 0;
-		if (a_x < 0) i = 2;
-		if (a_y < 0) i++;
-		set_fnd1(i, 8);
 
-		gradient_x = a_x / 16384.0;
-		gradient_y = a_y / 16384.0;
+		// TODO: test it
 
-		// 16384
-		j = sqrt((pow(gradient_x, 2) + pow(gradient_y, 2)) / 2) * 8;
-		PORTA = 0xff ^ (0xff << j);
+		// normalize gradient x and y
+		normalized_gradient_x = a_x / 16384.0;
+		normalized_gradient_y = a_y / 16384.0;
 
-		usart_transmit(i);
+		// get angle from x-axis by using atan
+		angle = atan2(normalized_gradient_y, normalized_gradient_x);
+
+		// get inclination by pythagoras-length of gradients
+		inclination = sqrt((pow(gradient_x, 2) + pow(gradient_y, 2)) / 2);
+
+		// turn left/right
+		if (angle < 0) motor_control(DRIVE_LEFT,  0.5); // TODO: set driving time
+		if (angle > 0) motor_control(DRIVE_RIGHT, 0.5); // TODO: set driving time
+
+		// move forward
+		motor_control(DRIVE_FORWARD, 0.5); // TODO: set driving time
+
+		// show the number on FND
+		if (a_x >= 0 && a_y >= 0) set_fnd1(0, 2);
+		if (a_x >= 0 && a_y <  0) set_fnd1(0, 3);
+		if (a_x <  0 && a_y >= 0) set_fnd1(0, 0);
+		if (a_x <  0 && a_y <  0) set_fnd1(0, 1);
+
+		// turn on the LED
+		PORTA = 0xff ^ (0xff << (inclination * 8));
+
+		usart_transmit(inclination);
 		usart_transmit('\n');
 		usart_transmit('\r');
 
