@@ -16,6 +16,7 @@
 #include "fnd.h"
 #include "gyro.h"
 #include "usart.h"
+#include "motorL9110.h"
 
 #define F_CPU 16000000UL
 
@@ -33,7 +34,8 @@ void run_gradient_descent()
 	int i, j;
 
 	// variables for gyro sensor: MPU-6050
-	volatile double a_x, a_y, a_z, g_x, g_y, g_z;
+	double a_x, a_y, a_z, g_x, g_y, g_z;
+	double gradient_x, gradient_y;
 
 	while (1)
 	{
@@ -65,10 +67,10 @@ void run_gradient_descent()
 		LED
 		 2     3
 
-		0: +++
-		1: +-+
-		2: -++
-		3: --+
+		0: +++ >>> backward right
+		1: +-+ >>> backward left
+		2: -++ >>> forward  right
+		3: --+ >>> forward  left
 		
 		*/
 		i = 0;
@@ -76,8 +78,11 @@ void run_gradient_descent()
 		if (a_y < 0) i++;
 		set_fnd1(i, 8);
 
+		gradient_x = a_x / 16384.0;
+		gradient_y = a_y / 16384.0;
+
 		// 16384
-		j = sqrt((pow(a_x/16384.0, 2) + pow(a_y/16384.0, 2)) / 2) * 8;
+		j = sqrt((pow(gradient_x, 2) + pow(gradient_y, 2)) / 2) * 8;
 		PORTA = 0xff ^ (0xff << j);
 
 		usart_transmit(i);
@@ -91,6 +96,13 @@ void run_gradient_descent()
 int main()
 {
 	DDRA = 0xff; // 1111 1111 : set dda7 ~ dda0 to write LED
+
+	// test motors
+	motor_control(DRIVE_FORWARD,  1.5);
+	motor_control(DRIVE_BACKWARD, 1.5);
+	motor_control(DRIVE_LEFT,     1.5);
+	motor_control(DRIVE_RIGHT,    1.5);
+	motor_control(DRIVE_STOP,     0.0);
 
 	usart_init();
 	delay(5);
