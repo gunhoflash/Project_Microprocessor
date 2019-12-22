@@ -1,5 +1,19 @@
 /*
-	Transmit data
+
+	This header file defines methods to transmit data using USART communication.
+
+	Required PINs             : nothing
+	Required external headers : nothing
+
+*/
+
+/*
+	Description:
+		Initialize.
+	Parameters:
+		nothing
+	Return:
+		nothing
 */
 void usart_init()
 {
@@ -10,11 +24,29 @@ void usart_init()
 	UBRR0H = 0;
 	UBRR0L = 0x67; // set speed as 9600
 }
+
+/*
+	Description:
+		Transmit a character data.
+	Parameters:
+		tx_data: Data to transmit.
+	Return:
+		nothing
+*/
 void usart_transmit(unsigned char tx_data)
 { 
 	while(!(UCSR0A & (1 << UDRE0)));
 	UDR0 = tx_data; 
 }
+
+/*
+	Description:
+		Transmit a integer data.
+	Parameters:
+		data: Data to transmit.
+	Return:
+		nothing
+*/
 void usart_transmit_init4(int data)
 {
 	if (data < 0)
@@ -36,15 +68,4 @@ void usart_transmit_init4(int data)
 	usart_transmit(temp + 48);
 	temp = (data %    10);
 	usart_transmit(temp + 48);
-}
-
-void usart_transmit_volatile_doubles(volatile double *data, int length)
-{
-	for (int i = 0; i < length; i++)
-	{
-		usart_transmit_init4(data[i]);
-		usart_transmit('\t');
-	}
-	usart_transmit('\n');
-	usart_transmit('\r');
 }

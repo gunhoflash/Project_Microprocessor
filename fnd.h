@@ -1,8 +1,20 @@
 /*
-	Turn on 1 FND
-	USED PIN: C G
-	select: 0, 1, 2, 3
-	data: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+
+	This header file defines methods to control FND.
+
+	Required PINs             : C, G
+	Required external headers : delay.h
+
+*/
+
+/*
+	Description:
+		Turn on only one FND.
+	Parameters:
+		select: Index of each FND. (0 ~ 3)
+		data: A digit number to display. (0 ~ 9)
+	Return:
+		nothing
 */
 void set_fnd1(int select, int data)
 {
@@ -19,10 +31,10 @@ void set_fnd1(int select, int data)
 	DDRC  = 0xff; // 1111 1111 : set ddc7 ~ ddc0 to write FND DATA
 	DDRG |= 0x0f; // 0000 1111 : set ddg3 ~ ddg0 to write FND SELECT
 
-	// Select the FND to on
+	// select the FND to turn on
 	PORTG = 0x8 >> (select % 4);
 
-	// On FND with data
+	// display the digit
 	switch (data)
 	{
 		case 0 : PORTC = 0b00111111; break;
@@ -40,18 +52,26 @@ void set_fnd1(int select, int data)
 }
 
 /*
-	Turn on 4 FND
-	USED PIN: C G
+	Description:
+		Turn on all FNDs.
+	Parameters:
+		data: An integer to display. (0 ~ 9999)
+		select: Index of each FND. (0 ~ 3)
+	Return:
+		nothing
 */
 void set_fnd4(int data, unsigned int ms)
 {
 	unsigned int time = 5;
 	unsigned int max_time = ms * F_CPU / 1777000;
-	int data0 = (data / 1000) % 10;
-	int data1 = (data / 100) % 10;
-	int data2 = (data / 10) % 10;
-	int data3 = (data / 1) % 10;
 
+	// calculate digits to display
+	int data0 = (data / 1000) % 10;
+	int data1 = (data /  100) % 10;
+	int data2 = (data /   10) % 10;
+	int data3 = (data /    1) % 10;
+
+	// display digits for a time
 	while (time < max_time)
 	{
 		set_fnd1(0, data0); _delay_ms(2);
